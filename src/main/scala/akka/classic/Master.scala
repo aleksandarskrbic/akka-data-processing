@@ -3,7 +3,7 @@ package akka.classic
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.classic.Master.Aggregate
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 object Master {
   final object Initialize
@@ -15,7 +15,7 @@ object Master {
 }
 
 trait MasterHandler {
-  def toAggregate(results: ListBuffer[Worker.ResultResponse]): Aggregate = {
+  def toAggregate(results: Seq[Worker.ResultResponse]): Aggregate = {
     val aggregate = results
       .map(_.state)
       .flatMap(_.toList)
@@ -30,12 +30,12 @@ trait MasterHandler {
 class Master(nWorkers: Int) extends Actor with ActorLogging with MasterHandler {
   import Master._
 
-  val results = new ListBuffer[Worker.ResultResponse]()
+  val results = new ArrayBuffer[Worker.ResultResponse]()
 
   override def receive: Receive = {
     case Initialize =>
       log.info(s"Spawning $nWorkers workers...")
-      val workers: Seq[ActorRef] = (1 to nWorkers).map(i => context.actorOf(Worker.props(i), s"worker-$i"))
+      val workers: Seq[ActorRef] = (1 to nWorkers).map(createWorker)
       context.become(forwardTask(workers, 0))
       sender() ! MasterInitialized
   }
@@ -55,7 +55,10 @@ class Master(nWorkers: Int) extends Actor with ActorLogging with MasterHandler {
     case response @ Worker.ResultResponse(_, _) =>
       results += response
       if (results.length == nWorkers) {
-        context.parent ! toAggregate(results)
+        context.parent ! toAggregate(results.toSeq)
       }
   }
+
+  def createWorker(index: Int): ActorRef =
+    context.actorOf(Worker.props(index), s"worker-$index")
 }

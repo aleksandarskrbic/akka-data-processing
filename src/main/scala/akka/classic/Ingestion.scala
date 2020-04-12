@@ -21,7 +21,10 @@ trait IngestionHandler {
   val validIp: String => Boolean = line => ip.matches(line.split(",")(0))
 }
 
-class Ingestion(input: String, output: String, nWorkers: Int) extends Actor with ActorLogging with IngestionHandler {
+class Ingestion(input: String, output: String, nWorkers: Int)
+    extends Actor
+    with ActorLogging
+    with IngestionHandler {
   import Ingestion._
 
   val master: ActorRef = createMasterActor()

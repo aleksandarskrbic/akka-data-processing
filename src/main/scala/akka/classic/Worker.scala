@@ -14,23 +14,25 @@ object Worker {
 trait WorkerHandler {
   import Worker._
 
-  val toLog: String => Log = line =>
-    line.split(",").toList match {
-      case ip :: time :: url :: status :: _ =>
-        val date: Date = time.substring(1, time.length).split("/").toList match {
-          case _ :: month :: timeParts :: _ =>
-            val year = timeParts.split(":")(0).toInt
-            val hour = timeParts.split(":")(1).toInt
-            Date(month, year, hour)
-        }
-        Log(ip, date, url, status)
-    }
+  def toLog(line: String): Log = line.split(",").toList match {
+    case ip :: time :: url :: status :: _ =>
+      val date = time.substring(1, time.length).split("/").toList match {
+        case _ :: month :: timeParts :: _ =>
+          val year = timeParts.split(":")(0).toInt
+          val hour = timeParts.split(":")(1).toInt
+          Date(month, year, hour)
+      }
+      Log(ip, date, url, status)
+  }
 }
 
 class Worker(id: Int) extends Actor with ActorLogging with WorkerHandler {
   import Worker._
 
-  var state: Map[String, Long] = Map.empty
+  private type StatusCode = String
+  private type Count = Long
+
+  var state: Map[StatusCode, Count] = Map.empty
 
   override def receive: Receive = {
     case Ingestion.Line(text) =>
