@@ -32,17 +32,20 @@ class Worker(id: Int) extends Actor with ActorLogging with WorkerHandler {
   private type StatusCode = String
   private type Count = Long
 
-  var state: Map[StatusCode, Count] = Map.empty
+  override def receive: Receive = process(Map.empty)
 
-  override def receive: Receive = {
+  def process(state: Map[StatusCode, Count]): Receive = {
     case Ingestion.Line(text) =>
       val status = toLog(text).status
       state.get(status) match {
         case Some(count) =>
-          state += (status -> (count + 1))
+          val newState: Map[StatusCode, Count] = state + (status -> (count + 1))
+          context.become(process(newState))
         case None =>
-          state += (status -> 1)
+          val newState: Map[StatusCode, Count] = state + (status -> 1)
+          context.become(process(newState))
       }
+
     case ResultRequest =>
       sender() ! ResultResponse(id, state)
   }

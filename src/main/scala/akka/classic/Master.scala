@@ -3,8 +3,6 @@ package akka.classic
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.classic.Master.Aggregate
 
-import scala.collection.mutable.ArrayBuffer
-
 object Master {
   final object Initialize
   final object MasterInitialized
@@ -30,8 +28,6 @@ trait MasterHandler {
 class Master(nWorkers: Int) extends Actor with ActorLogging with MasterHandler {
   import Master._
 
-  val results = new ArrayBuffer[Worker.ResultResponse]()
-
   override def receive: Receive = {
     case Initialize =>
       log.info(s"Spawning $nWorkers workers...")
@@ -48,15 +44,14 @@ class Master(nWorkers: Int) extends Actor with ActorLogging with MasterHandler {
       context.become(forwardTask(workers, nextWorker))
     case CollectResults =>
       workers.foreach(_ ! Worker.ResultRequest)
-      context.become(collectResults())
+      context.become(collectResults(Seq.empty))
   }
 
-  def collectResults(): Receive = {
+  def collectResults(results: Seq[Worker.ResultResponse]): Receive = {
+    case response @ Worker.ResultResponse(_, _) if results.length == (nWorkers - 1) =>
+      context.parent ! toAggregate(response +: results)
     case response @ Worker.ResultResponse(_, _) =>
-      results += response
-      if (results.length == nWorkers) {
-        context.parent ! toAggregate(results.toSeq)
-      }
+      context.become(collectResults(response +: results))
   }
 
   def createWorker(index: Int): ActorRef =
