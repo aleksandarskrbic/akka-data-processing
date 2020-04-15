@@ -1,7 +1,6 @@
 package akka.classic
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.classic.Master.Aggregate
 
 object Master {
   final object Initialize
@@ -13,6 +12,8 @@ object Master {
 }
 
 trait MasterHandler {
+  import Master._
+
   def toAggregate(results: Seq[Worker.ResultResponse]): Aggregate = {
     val aggregate = results
       .map(_.state)

@@ -2,9 +2,9 @@ package akka.classic
 
 import java.io.File
 
-import scala.io.Source
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
+import scala.io.Source
 import scala.util.matching.Regex
 
 object Ingestion {
@@ -47,7 +47,9 @@ class Ingestion(input: String, output: String, nWorkers: Int)
       context.parent ! Supervisor.Stop
   }
 
-  def createMasterActor(): ActorRef = context.actorOf(Master.props(nWorkers), "master")
+  def createMasterActor(): ActorRef =
+    context.actorOf(Master.props(nWorkers), "master")
 
-  def createFile(): File = new File(getClass.getClassLoader.getResource(input).getPath)
+  def createFile(): File =
+    new File(getClass.getClassLoader.getResource(input).getPath)
 }

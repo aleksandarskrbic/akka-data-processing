@@ -10,7 +10,9 @@ object Supervisor {
     Props(new Supervisor(input, output, parallelism))
 }
 
-class Supervisor(input: String, output: String, parallelism: Int) extends Actor with ActorLogging {
+class Supervisor(input: String, output: String, parallelism: Int)
+    extends Actor
+    with ActorLogging {
   import Supervisor._
 
   val ingestion: ActorRef = createIngestionActor()
@@ -25,5 +27,8 @@ class Supervisor(input: String, output: String, parallelism: Int) extends Actor 
   }
 
   def createIngestionActor(): ActorRef =
-    context.actorOf(Ingestion.props(input, output, parallelism), "ingestion-actor")
+    context.actorOf(
+      Ingestion.props(input, output, parallelism),
+      "ingestion-actor"
+    )
 }
